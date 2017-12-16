@@ -231,7 +231,6 @@ ui <- fluidPage(
                          
                          tags$h4(print('Parameters - classification')),
                          tags$h4(print('some text')),
-                         tags$h4(print('another text')),
                          hr(),
                          checkboxInput("classPred",tags$b("Classification problem"),value=FALSE),
                          numericInput("hid1", "Number of Nodes in Hidden layer 1:", 5),
