@@ -11,6 +11,10 @@ library(shiny)
 library(shinyBS)
 library(fscaret)
 
+regChoices <- funcRegPred
+
+
+
 # Define UI for application that draws a histogram
 ui <- fluidPage(
   
@@ -209,7 +213,8 @@ ui <- fluidPage(
                           tags$h4(print('Parameters - regression')),
                           hr(),
                           checkboxInput("regPred",tags$b("Regression problem"),value=TRUE),
-                          bsTooltip("regPred", "If this box is checked the regression models are applied",
+                          bsTooltip("regPred", "If this box is checked the regression models are applied.
+                                    Please, check only one ",
                                     "right", options = list(container = "body")),
                           hr(),
                           #Parameters/Variables
@@ -224,7 +229,11 @@ ui <- fluidPage(
                           numericInput("myTimeLimit","Time limit for single model development (in seconds):",
                                        3600),
                           numericInput("no.cores", "Number of cores used", -1),
-                          numericInput("elitism_percent", "Percentage of Elitism", 20)
+                          hr(),
+                          tags$h4(print('Models selection')),
+                          checkboxInput("regAllNone","All/None",value = TRUE),
+                          checkboxGroupInput("regFuncSelect","Regression models",regChoices,selected = TRUE)
+                          
                           ),
                  
                          column(5,
@@ -298,7 +307,7 @@ ui <- fluidPage(
 
 
 # Define server logic required to draw a histogram
-server <- function(input, output) {
+server <- function(input, output,session) {
   
   
   
@@ -366,6 +375,14 @@ server <- function(input, output) {
     }
     
   })
+  
+  observe({
+    updateCheckboxGroupInput(
+      session, 'regFuncSelect', choices = regChoices,
+      selected = if (input$regAllNone) regChoices
+    )
+  })
+
   
 }
 
