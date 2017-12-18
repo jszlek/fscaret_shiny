@@ -12,6 +12,7 @@ library(shinyBS)
 library(fscaret)
 
 regChoices <- funcRegPred
+classChoices <- funcClassPred
 
 
 
@@ -74,7 +75,25 @@ ui <- fluidPage(
   # End Important
   
   
+  ## START of custom CSS for 3 column layout (used below for mechanics filter options)
+  tags$head(
+    tags$style(HTML("
+
+     .multicol {
+
+       -webkit-column-count: 3; /* Chrome, Safari, Opera */
+
+       -moz-column-count: 3; /* Firefox */
+
+       column-count: 3;
+
+     }
+
+   "))
+    
+  ),
   
+  ## END of custom CSS for 3 column layout (used below for mechanics filter options)
   
   
   
@@ -213,26 +232,35 @@ ui <- fluidPage(
                           tags$h4(print('Parameters - regression')),
                           hr(),
                           checkboxInput("regPred",tags$b("Regression problem"),value=TRUE),
-                          bsTooltip("regPred", "If this box is checked the regression models are applied.
-                                    Please, check only one ",
+                          bsTooltip("regPred", "If this box is checked the regression models are applied. Please, check only one of Regression OR Classification",
                                     "right", options = list(container = "body")),
                           hr(),
                           #Parameters/Variables
-                          radioButtons("installReqPckg","Install all required packages before calculations?",
+                          radioButtons("installReqPckg1","Install all required packages before calculations?",
                                         list("TRUE","FALSE"), selected = "FALSE" ),
-                          radioButtons("preprocessData","Pre-process data before training the models?",
+                          radioButtons("preprocessData1","Pre-process data before training the models?",
                                        list("TRUE","FALSE"), selected = "FALSE" ),
-                          radioButtons("with.labels","Input data include header?",
+                          radioButtons("with.labels1","Input data include header?",
                                        list("TRUE","FALSE"), selected = "TRUE" ),
-                          radioButtons("impCalcMet","Scale variable importence according to:",
+                          radioButtons("impCalcMet1","Scale variable importence according to:",
                                        list("RMSE&MSE","RMSE","MSE"), selected = "RMSE&MSE" ),
-                          numericInput("myTimeLimit","Time limit for single model development (in seconds):",
+                          numericInput("myTimeLimit1","Time limit for single model development (in seconds):",
                                        3600),
-                          numericInput("no.cores", "Number of cores used", -1),
+                          numericInput("no.cores1", "Number of cores used", -1),
+                          radioButtons("method1","Method passed to fitControl of caret package:",
+                                       list("boot","boot_all","oob","cv","boot632","repeatedcv","LOOCV","LGOCV"), selected = "boot" ),
+                          radioButtons("returnResamp1","Returned resampling method passed to fitControl of caret package:",
+                                       list("all","final","none"), selected = "all" ),
+                          radioButtons("missData1","Handling of missing data values:",
+                                       list("delRow","delCol","meanCol","NULL"), selected = "NULL" ),
+                          radioButtons("supressOutput1","Supress the output of modeling phase by caret functions:",
+                                       list("TRUE","FALSE"), selected = "FALSE" ),
+                          radioButtons("saveModel1","Trained models should be embedded in the result:",
+                                       list("TRUE","FALSE"), selected = "FALSE" ),
                           hr(),
                           tags$h4(print('Models selection')),
                           checkboxInput("regAllNone","All/None",value = TRUE),
-                          checkboxGroupInput("regFuncSelect","Regression models",regChoices,selected = TRUE)
+                          tags$div(class="multicol",checkboxGroupInput("regFuncSelect","Regression models",regChoices,selected = TRUE))
                           
                           ),
                  
@@ -240,12 +268,24 @@ ui <- fluidPage(
                          
                          tags$h4(print('Parameters - classification')),
                          hr(),
-                         
-                         numericInput("hid1", "Number of Nodes in Hidden layer 1:", 5),
-                         numericInput("hid2", "Number of Nodes in Hidden layer 2:", 2),
-                         numericInput("ens", "No. of Ensembles (Local):", 10),
-                         numericInput("trials", "Number of Trials:", 5),
-                         numericInput("iter_max", "Maximum number of Iterations:", 10)
+                         checkboxInput("classPred",tags$b("Classification problem"),value=FALSE),
+                         bsTooltip("classPred", "If this box is checked the regression models are applied. Please, check only one of Regression OR Classification",
+                                   "right", options = list(container = "body")),
+                         hr(),
+                         #Parameters/Variables
+                         radioButtons("installReqPckg2","Install all required packages before calculations?",
+                                      list("TRUE","FALSE"), selected = "FALSE" ),
+                         radioButtons("preprocessData2","Pre-process data before training the models?",
+                                      list("TRUE","FALSE"), selected = "FALSE" ),
+                         radioButtons("with.labels2","Input data include header?",
+                                      list("TRUE","FALSE"), selected = "TRUE" ),
+                         numericInput("myTimeLimit2","Time limit for single model development (in seconds):",
+                                      3600),
+                         numericInput("no.cores2", "Number of cores used", -1),
+                         hr(),
+                         tags$h4(print('Models selection')),
+                         checkboxInput("classAllNone","All/None",value = TRUE),
+                         tags$div(class="multicol",checkboxGroupInput("classFuncSelect","Classification models",classChoices,selected = TRUE))
                          ),
 
                          #checkboxInput('multicore', 'Use Multicore', FALSE),
@@ -380,6 +420,13 @@ server <- function(input, output,session) {
     updateCheckboxGroupInput(
       session, 'regFuncSelect', choices = regChoices,
       selected = if (input$regAllNone) regChoices
+    )
+  })
+  
+  observe({
+    updateCheckboxGroupInput(
+      session, 'classFuncSelect', choices = classChoices,
+      selected = if (input$classAllNone) classChoices
     )
   })
 
