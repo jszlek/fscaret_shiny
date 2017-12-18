@@ -8,8 +8,6 @@
 #
 
 library(shiny)
-library(shinyBS)
-library(fscaret)
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
@@ -208,22 +206,13 @@ ui <- fluidPage(
                  
                           tags$h4(print('Parameters - regression')),
                           hr(),
-                          checkboxInput("regPred",tags$b("Regression problem"),value=TRUE),
-                          bsTooltip("regPred", "If this box is checked the regression models are applied",
-                                    "right", options = list(container = "body")),
-                          hr(),
+                          
                           #Parameters/Variables
-                          radioButtons("installReqPckg","Install all required packages before calculations?",
-                                        list("TRUE","FALSE"), selected = "FALSE" ),
-                          radioButtons("preprocessData","Pre-process data before training the models?",
-                                       list("TRUE","FALSE"), selected = "FALSE" ),
-                          radioButtons("with.labels","Input data include header?",
-                                       list("TRUE","FALSE"), selected = "TRUE" ),
-                          radioButtons("impCalcMet","Scale variable importence according to:",
-                                       list("RMSE&MSE","RMSE","MSE"), selected = "RMSE&MSE" ),
-                          numericInput("myTimeLimit","Time limit for single model development (in seconds):",
-                                       3600),
-                          numericInput("no.cores", "Number of cores used", -1),
+                          numericInput("maxRules", "Maximum number of rules allowed", 5),
+                          numericInput("maxVarPerRule", "Maximum number of variables per rule", 2),
+                          numericInput("generation", "Generation", 50),
+                          numericInput("population", "Population size", 100),
+                          numericInput("labelsMf", "LabelsMf", 21),
                           numericInput("elitism_percent", "Percentage of Elitism", 20)
                           ),
                  
