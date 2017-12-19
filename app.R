@@ -10,6 +10,7 @@
 library(shiny)
 library(shinyBS)
 library(fscaret)
+library(DT)
 
 regChoices <- funcRegPred
 classChoices <- funcClassPred
@@ -232,21 +233,21 @@ ui <- fluidPage(
                           tags$h4(print('Parameters - regression')),
                           hr(),
                           checkboxInput("regPred",tags$b("Regression problem"),value=TRUE),
-                          bsTooltip("regPred", "If this box is checked the regression models are applied. Please, check only one of Regression OR Classification",
-                                    "right", options = list(container = "body")),
+
                           hr(),
                           #Parameters/Variables
                           radioButtons("installReqPckg1","Install all required packages before calculations?",
                                         list("TRUE","FALSE"), selected = "FALSE" ),
+                          
                           radioButtons("preprocessData1","Pre-process data before training the models?",
                                        list("TRUE","FALSE"), selected = "FALSE" ),
-                          radioButtons("with.labels1","Input data include header?",
+                          radioButtons("withlabels1","Input data include header?",
                                        list("TRUE","FALSE"), selected = "TRUE" ),
                           radioButtons("impCalcMet1","Scale variable importence according to:",
                                        list("RMSE&MSE","RMSE","MSE"), selected = "RMSE&MSE" ),
                           numericInput("myTimeLimit1","Time limit for single model development (in seconds):",
                                        3600),
-                          numericInput("no.cores1", "Number of cores used", -1),
+                          numericInput("nocores1", "Number of cores used", -1),
                           radioButtons("method1","Method passed to fitControl of caret package:",
                                        list("boot","boot_all","oob","cv","boot632","repeatedcv","LOOCV","LGOCV"), selected = "boot" ),
                           radioButtons("returnResamp1","Returned resampling method passed to fitControl of caret package:",
@@ -261,7 +262,7 @@ ui <- fluidPage(
                           tags$h4(print('Models selection')),
                           checkboxInput("regAllNone","All/None",value = TRUE),
                           tags$div(class="multicol",checkboxGroupInput("regFuncSelect","Regression models",regChoices,selected = TRUE))
-                          
+
                           ),
                  
                          column(5,
@@ -269,7 +270,7 @@ ui <- fluidPage(
                          tags$h4(print('Parameters - classification')),
                          hr(),
                          checkboxInput("classPred",tags$b("Classification problem"),value=FALSE),
-                         bsTooltip("classPred", "If this box is checked the regression models are applied. Please, check only one of Regression OR Classification",
+                         bsTooltip("classPred", "Please, check only one of Regression OR Classification checkbox.",
                                    "right", options = list(container = "body")),
                          hr(),
                          #Parameters/Variables
@@ -277,16 +278,79 @@ ui <- fluidPage(
                                       list("TRUE","FALSE"), selected = "FALSE" ),
                          radioButtons("preprocessData2","Pre-process data before training the models?",
                                       list("TRUE","FALSE"), selected = "FALSE" ),
-                         radioButtons("with.labels2","Input data include header?",
+                         radioButtons("withlabels2","Input data include header?",
                                       list("TRUE","FALSE"), selected = "TRUE" ),
                          numericInput("myTimeLimit2","Time limit for single model development (in seconds):",
                                       3600),
-                         numericInput("no.cores2", "Number of cores used", -1),
+                         numericInput("nocores2", "Number of cores used", -1),
+                         radioButtons("method2","Method passed to fitControl of caret package:",
+                                      list("boot","boot_all","oob","cv","boot632","repeatedcv","LOOCV","LGOCV"), selected = "boot" ),
+                         radioButtons("returnResamp2","Returned resampling method passed to fitControl of caret package:",
+                                      list("all","final","none"), selected = "all" ),
+                         radioButtons("missData2","Handling of missing data values:",
+                                      list("delRow","delCol","meanCol","NULL"), selected = "NULL" ),
+                         radioButtons("supressOutput2","Supress the output of modeling phase by caret functions:",
+                                      list("TRUE","FALSE"), selected = "FALSE" ),
+                         radioButtons("saveModel2","Trained models should be embedded in the result:",
+                                      list("TRUE","FALSE"), selected = "FALSE" ),
                          hr(),
                          tags$h4(print('Models selection')),
                          checkboxInput("classAllNone","All/None",value = TRUE),
                          tags$div(class="multicol",checkboxGroupInput("classFuncSelect","Classification models",classChoices,selected = TRUE))
                          ),
+                   
+                   
+                   
+                   # Tool tips - regression options
+                   bsTooltip("regPred", "Please, check only one of Regression OR Classification checkbox.",
+                             "right", options = list(container = "body")),
+                   bsTooltip("installReqPckg1", "Default value = FALSE",
+                             "right", options = list(container = "body")),
+                   bsTooltip("preprocessData1", "Default value = FALSE",
+                             "right", options = list(container = "body")),
+                   bsTooltip("withlabels1", "Default value = TRUE",
+                             "right", options = list(container = "body")),
+                   bsTooltip("impCalcMet1", "Default value = RMSE&MSE",
+                             "right", options = list(container = "body")),
+                   bsTooltip("myTimeLimit1", "Default value = RMSE&MSE",
+                             "right", options = list(container = "body")),
+                   bsTooltip("nocores1", "Default value = -1 (Use All Available Cores)",
+                             "right", options = list(container = "body")),
+                   bsTooltip("method1", "Default value = boot",
+                             "right", options = list(container = "body")),
+                   bsTooltip("returnResamp1", "Default value = all",
+                             "right", options = list(container = "body")),
+                   bsTooltip("missData1", "Default value = NULL",
+                             "right", options = list(container = "body")),
+                   bsTooltip("supressOutput1", "Default value = FALSE",
+                             "right", options = list(container = "body")),
+                   bsTooltip("saveModel1", "Default value = FALSE",
+                             "right", options = list(container = "body")),
+                   
+                   # Tool tips - classification options
+                   bsTooltip("classPred", "Please, check only one of Regression OR Classification checkbox.",
+                             "right", options = list(container = "body")),
+                   bsTooltip("installReqPckg2", "Default value = FALSE",
+                             "right", options = list(container = "body")),
+                   bsTooltip("preprocessData2", "Default value = FALSE",
+                             "right", options = list(container = "body")),
+                   bsTooltip("withlabels2", "Default value = TRUE",
+                             "right", options = list(container = "body")),
+                   bsTooltip("myTimeLimit2", "Default value = RMSE&MSE",
+                             "right", options = list(container = "body")),
+                   bsTooltip("nocores2", "Default value = -1 (Use All Available Cores)",
+                             "right", options = list(container = "body")),
+                   bsTooltip("method2", "Default value = boot",
+                             "right", options = list(container = "body")),
+                   bsTooltip("returnResamp2", "Default value = all",
+                             "right", options = list(container = "body")),
+                   bsTooltip("missData2", "Default value = NULL",
+                             "right", options = list(container = "body")),
+                   bsTooltip("supressOutput2", "Default value = FALSE",
+                             "right", options = list(container = "body")),
+                   bsTooltip("saveModel2", "Default value = FALSE",
+                             "right", options = list(container = "body")),
+                   
 
                          #checkboxInput('multicore', 'Use Multicore', FALSE),
 
@@ -297,9 +361,8 @@ ui <- fluidPage(
                          br(),
                          br(),
                          
-                         actionButton ("runlocal1", "Run regression"),
-                         tags$br(),
-                         actionButton ("runlocal2", "Run classification")
+                         actionButton ("runlocal1", "Run computations")
+                         
                          
                          )
                  )
@@ -308,14 +371,16 @@ ui <- fluidPage(
   
   
   tabPanel("Results",fluid=TRUE,
-           sidebarLayout(
-             sidebarPanel(
-               
-             ),
+
+             
              mainPanel(
                
+               column(width = 8, 
+                      DT::dataTableOutput("results",
+                                          width = "75%"))
+               
              )
-           )             
+                        
   ),
   
   tabPanel("About",fluid=TRUE,
@@ -366,11 +431,6 @@ server <- function(input, output,session) {
     session$sendCustomMessage(type = "addTabToTabset", message = list(titles = titles, tabsetName = tabsetName))
   }
   # End Important 
-  
-  
-  
-  
-  
    
   output$contents_train <- renderTable({
     
@@ -419,17 +479,79 @@ server <- function(input, output,session) {
   observe({
     updateCheckboxGroupInput(
       session, 'regFuncSelect', choices = regChoices,
-      selected = if (input$regAllNone) regChoices
+      selected = if (input$regAllNone) {regChoices}
     )
   })
   
   observe({
     updateCheckboxGroupInput(
       session, 'classFuncSelect', choices = classChoices,
-      selected = if (input$classAllNone) classChoices
+      selected = if (input$classAllNone) {classChoices}
     )
   })
+  
+  observeEvent(input$regPred, {
+    if(input$classPred==TRUE){
+    updateCheckboxInput(session,"regPred",value=FALSE)
+    }
+  })
+  
+  observeEvent(input$classPred, {
+    if(input$regPred==TRUE){
+    updateCheckboxInput(session,"classPred",value=FALSE)
+    }
+    
+  })
+  
 
+  myFS <- function(){
+    
+    trainDF <- read.csv(input$file_train$datapath,
+                        header = input$header,
+                        sep = input$sep,
+                        quote = input$quote)
+    
+    testDF <- read.csv(input$file_test$datapath,
+                   header = input$header,
+                   sep = input$sep,
+                   quote = input$quote)
+    
+    if(input$nocores1 == "-1"){
+      
+      input$nocores1 <- NULL
+      
+    }
+    
+    
+    res <- fscaret(trainDF, testDF, myTimeLimit = input$myTimeLimit1, preprocessData=input$preprocessData1,
+                   regPred=input$regPred,
+                   Used.funcRegPred=c(input$regFuncSelect), with.labels=input$withlabels1,
+                   supress.output=input$supressOutput1, no.cores=input$nocores1)
+    res_tab_MSE <- res$VarImp$matrixVarImp.MSE
+    res_tab_RMSE <- res$VarImp$matrixVarImp.RMSE
+    
+    return(res_tab_RMSE)
+    
+  }
+  
+
+rv <- reactiveValues()
+rv$data <- NULL
+  
+  observe({    ## will 'observe' the button press
+    
+    if(input$runlocal1){ 
+      rv$data <- myFS()   ## store the data in the reactive value
+      rv$data
+    }
+  })
+  
+  output$results <- DT::renderDataTable({
+    ## The data has been stored in our rv, so can just return it here
+    rv$data
+  })  
+  
+  
   
 }
 
