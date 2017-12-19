@@ -23,59 +23,6 @@ ui <- fluidPage(
   # Application title
   headerPanel("fscaret shiny ui"),
 
-  
-  # Important! : JavaScript functionality to add the Tabs
-  tags$head(tags$script(HTML("
-                             /* In coherence with the original Shiny way, tab names are created with random numbers. 
-                             To avoid duplicate IDs, we collect all generated IDs.  */
-                             var hrefCollection = [];
-                             
-                             Shiny.addCustomMessageHandler('addTabToTabset', function(message){
-                             var hrefCodes = [];
-                             /* Getting the right tabsetPanel */
-                             var tabsetTarget = document.getElementById(message.tabsetName);
-                             
-                             /* Iterating through all Panel elements */
-                             for(var i = 0; i < message.titles.length; i++){
-                             /* Creating 6-digit tab ID and check, whether it was already assigned. */
-                             do {
-                             hrefCodes[i] = Math.floor(Math.random()*100000);
-                             } 
-                             while(hrefCollection.indexOf(hrefCodes[i]) != -1);
-                             hrefCollection = hrefCollection.concat(hrefCodes[i]);
-                             
-                             /* Creating node in the navigation bar */
-                             var navNode = document.createElement('li');
-                             var linkNode = document.createElement('a');
-                             
-                             linkNode.appendChild(document.createTextNode(message.titles[i]));
-                             linkNode.setAttribute('data-toggle', 'tab');
-                             linkNode.setAttribute('data-value', message.titles[i]);
-                             linkNode.setAttribute('href', '#tab-' + hrefCodes[i]);
-                             
-                             navNode.appendChild(linkNode);
-                             tabsetTarget.appendChild(navNode);
-                             };
-                             
-                             /* Move the tabs content to where they are normally stored. Using timeout, because
-                             it can take some 20-50 millis until the elements are created. */ 
-                             setTimeout(function(){
-                             var creationPool = document.getElementById('creationPool').childNodes;
-                             var tabContainerTarget = document.getElementsByClassName('tab-content')[0];
-                             
-                             /* Again iterate through all Panels. */
-                             for(var i = 0; i < creationPool.length; i++){
-                             var tabContent = creationPool[i];
-                             tabContent.setAttribute('id', 'tab-' + hrefCodes[i]);
-                             
-                             tabContainerTarget.appendChild(tabContent);
-                             };
-                             }, 100);
-                             });
-                             "))),
-  # End Important
-  
-  
   ## START of custom CSS for 3 column layout (used below for mechanics filter options)
   tags$head(
     tags$style(HTML("
@@ -96,12 +43,7 @@ ui <- fluidPage(
   
   ## END of custom CSS for 3 column layout (used below for mechanics filter options)
   
-  
-  
-                       
-  
-  
-  
+
     
   tabsetPanel(id="tabs",
               tabPanel("Home",fluid=TRUE,
@@ -247,7 +189,7 @@ ui <- fluidPage(
                                        list("RMSE&MSE","RMSE","MSE"), selected = "RMSE&MSE" ),
                           numericInput("myTimeLimit1","Time limit for single model development (in seconds):",
                                        3600),
-                          numericInput("nocores1", "Number of cores used", -1),
+                          numericInput("nocores1", "Number of cores used", 4), # -1 value causes error!!
                           radioButtons("method1","Method passed to fitControl of caret package:",
                                        list("boot","boot_all","oob","cv","boot632","repeatedcv","LOOCV","LGOCV"), selected = "boot" ),
                           radioButtons("returnResamp1","Returned resampling method passed to fitControl of caret package:",
@@ -372,14 +314,26 @@ ui <- fluidPage(
   
   tabPanel("Results",fluid=TRUE,
 
-             
              mainPanel(
+              
+            
+              fluidRow(tags$h3(textOutput("textRMSE"))),  
+              fluidRow(p("")),
+              column(width = 8, 
+                      DT::dataTableOutput("resultsRMSE",
+                                          width = "75%")),
+              fluidRow(p("")),
+              fluidRow(p("")),
+              fluidRow(tags$h3(textOutput("textMSE"))),
+              fluidRow(p("")),
+              column(width = 8, 
+                     DT::dataTableOutput("resultsMSE",
+                                         width = "75%"))
+              
                
-               column(width = 8, 
-                      DT::dataTableOutput("results",
-                                          width = "75%"))
-               
+              
              )
+             
                         
   ),
   
@@ -412,25 +366,8 @@ ui <- fluidPage(
 
 
 # Define server logic required to draw a histogram
-server <- function(input, output,session) {
+server <- function(input,output,session) {
   
-  
-  
-  # Important! : creationPool should be hidden to avoid elements flashing before they are moved.
-  #              But hidden elements are ignored by shiny, unless this option below is set.
-  output$creationPool <- renderUI({})
-  outputOptions(output, "creationPool", suspendWhenHidden = FALSE)
-  # End Important
-  
-  # Important! : This is the make-easy wrapper for adding new tabPanels.
-  addTabToTabset <- function(Panels, tabsetName){
-    titles <- lapply(Panels, function(Panel){return(Panel$attribs$title)})
-    Panels <- lapply(Panels, function(Panel){Panel$attribs$title <- NULL; return(Panel)})
-    
-    output$creationPool <- renderUI({Panels})
-    session$sendCustomMessage(type = "addTabToTabset", message = list(titles = titles, tabsetName = tabsetName))
-  }
-  # End Important 
    
   output$contents_train <- renderTable({
     
@@ -504,6 +441,46 @@ server <- function(input, output,session) {
   })
   
 
+  
+
+rv <- reactiveValues()
+rv$data <- NULL
+  
+  observeEvent(input$runlocal1,{    ## will 'observe' the button press
+    
+    
+      rv$data <- myFS()   ## store the data in the reactive value
+      
+      output$textRMSE <- renderText({
+        
+        paste("Variable importance ranking according to RMSE")
+        
+      })
+      
+      output$textMSE <- renderText({
+        
+        paste("Variable importance ranking according to MSE")
+        
+      })
+      
+      
+      rv$data
+    
+  })
+  
+  output$resultsRMSE <- renderDataTable({
+    ## The data has been stored in our rv, so can just return it here
+        return(rv$data$VarImp$matrixVarImp.RMSE)
+    })
+    
+  output$resultsMSE <- renderDataTable({
+    ## The data has been stored in our rv, so can just return it here
+    return(rv$data$VarImp$matrixVarImp.MSE)
+  })
+  
+  
+  
+  # fscaret function call for regression problems
   myFS <- function(){
     
     trainDF <- read.csv(input$file_train$datapath,
@@ -512,11 +489,11 @@ server <- function(input, output,session) {
                         quote = input$quote)
     
     testDF <- read.csv(input$file_test$datapath,
-                   header = input$header,
-                   sep = input$sep,
-                   quote = input$quote)
+                       header = input$header,
+                       sep = input$sep,
+                       quote = input$quote)
     
-    if(input$nocores1 == "-1"){
+    if(input$nocores1 < 0){
       
       input$nocores1 <- NULL
       
@@ -530,26 +507,11 @@ server <- function(input, output,session) {
     res_tab_MSE <- res$VarImp$matrixVarImp.MSE
     res_tab_RMSE <- res$VarImp$matrixVarImp.RMSE
     
-    return(res_tab_RMSE)
+    return(res)
     
   }
   
-
-rv <- reactiveValues()
-rv$data <- NULL
-  
-  observe({    ## will 'observe' the button press
     
-    if(input$runlocal1){ 
-      rv$data <- myFS()   ## store the data in the reactive value
-      rv$data
-    }
-  })
-  
-  output$results <- DT::renderDataTable({
-    ## The data has been stored in our rv, so can just return it here
-    rv$data
-  })  
   
   
   
