@@ -15,6 +15,7 @@ library(DT)
 regChoices <- funcRegPred
 classChoices <- funcClassPred
 
+
 #' busyIndicator from https://github.com/AnalytixWare/ShinySky/blob/master/R/busy-indicator.r by  xiaodaigh
 #' 
 #' A busy indicator
@@ -46,7 +47,7 @@ busyIndicator <- function(text = "Calculation in progress..",img = "ajax-loader.
       ",wait)
     )
   )	
-  }
+}
 
 
 
@@ -118,7 +119,11 @@ ui <- fluidPage(
     
     # Sidebar panel for inputs ----
     sidebarPanel(
-      
+      helpText(
+        p("1) Please, chose both TRAIN and TEST data sets."),
+        p("2) Please, select the MISO (multiple input - single output) type data set file.")
+      ),
+      br(),
       # Input: Select a file ----
       fileInput("file_train", "Choose TRAINING CSV File",
                 multiple = TRUE,
@@ -127,24 +132,24 @@ ui <- fluidPage(
                            ".csv")),
 
       # Input: Checkbox if file has header ----
-      checkboxInput("header", "Header", TRUE),
+      checkboxInput("header_train", "Header", TRUE),
       
       # Input: Select separator ----
-      radioButtons("sep", "Separator",
+      radioButtons("sep_train", "Separator",
                    choices = c(Comma = ",",
                                Semicolon = ";",
                                Tab = "\t"),
                    selected = ","),
       
       # Input: Select quotes ----
-      radioButtons("quote", "Quote",
+      radioButtons("quote_train", "Quote",
                    choices = c(None = "",
                                "Double Quote" = '"',
                                "Single Quote" = "'"),
                    selected = '"'),
 
       # Input: Select number of rows to display ----
-      radioButtons("disp", "Display",
+      radioButtons("disp_train", "Display",
                    choices = c(Head = "head",
                                All = "all"),
                    selected = "head"),
@@ -164,32 +169,31 @@ ui <- fluidPage(
                            ".csv")),
       
       # Input: Checkbox if file has header ----
-      checkboxInput("header", "Header", TRUE),
+      checkboxInput("header_test", "Header", TRUE),
       
       # Input: Select separator ----
-      radioButtons("sep", "Separator",
+      radioButtons("sep_test", "Separator",
                    choices = c(Comma = ",",
                                Semicolon = ";",
                                Tab = "\t"),
                    selected = ","),
       
       # Input: Select quotes ----
-      radioButtons("quote", "Quote",
+      radioButtons("quote_test", "Quote",
                    choices = c(None = "",
                                "Double Quote" = '"',
                                "Single Quote" = "'"),
                    selected = '"'),
       
       # Input: Select number of rows to display ----
-      radioButtons("disp", "Display",
+      radioButtons("disp_test", "Display",
                    choices = c(Head = "head",
                                All = "all"),
-                   selected = "head"),
-      
-      hr(),
-      helpText("To actiavate next tabs please select both training and testing data sets.")
-      
+                   selected = "head")
+
     ),
+    
+
       
       # Show a plot of the generated distribution
       mainPanel(
@@ -414,11 +418,11 @@ server <- function(input,output,session) {
     req(input$file_train)
     
     df <- read.csv(input$file_train$datapath,
-                   header = input$header,
-                   sep = input$sep,
-                   quote = input$quote)
+                   header = input$header_train,
+                   sep = input$sep_train,
+                   quote = input$quote_train)
     
-    if(input$disp == "head") {
+    if(input$disp_train == "head") {
       return(head(df))
     }
     else {
@@ -436,11 +440,11 @@ server <- function(input,output,session) {
     req(input$file_test)
     
     df <- read.csv(input$file_test$datapath,
-                   header = input$header,
-                   sep = input$sep,
-                   quote = input$quote)
+                   header = input$header_test,
+                   sep = input$sep_test,
+                   quote = input$quote_test)
     
-    if(input$disp == "head") {
+    if(input$disp_test == "head") {
       return(head(df))
     }
     else {
@@ -487,6 +491,26 @@ rv$data <- NULL
     
       rv$data <- myFS()   ## store the data in the reactive value
       
+      #print("here1") #debugging
+      if(input$preprocessData1 == "TRUE"){
+      #  print("here2") #debugging  
+        rv$data$VarImp$matrixVarImp.RMSE <- merge(x=rv$data$VarImp$matrixVarImp.RMSE, y=rv$data$PPlabels, by.x="Input_no", by.y="Input_no", all.x=T)
+        rv$data$VarImp$matrixVarImp.RMSE <- rv$data$VarImp$matrixVarImp.RMSE[order(rv$data$VarImp$matrixVarImp.RMSE[,length(rv$data$VarImp$matrixVarImp.RMSE)-3],decreasing=TRUE),,drop=FALSE]
+        
+        rv$data$VarImp$matrixVarImp.MSE <- merge(x=rv$data$VarImp$matrixVarImp.MSE, y=rv$data$PPlabels, by.x="Input_no", by.y="Input_no", all.x=T)
+        rv$data$VarImp$matrixVarImp.MSE <- rv$data$VarImp$matrixVarImp.MSE[order(rv$data$VarImp$matrixVarImp.MSE[,length(rv$data$VarImp$matrixVarImp.MSE)-3],decreasing=TRUE),,drop=FALSE]
+        
+      } else if(input$preprocessData1 == "FALSE") {
+      #  print("here3") #debugging
+        rv$data$VarImp$matrixVarImp.RMSE <- merge(x=rv$data$VarImp$matrixVarImp.RMSE, y=rv$data$header, by.x="Input_no", by.y="Input_no", all.x=T)
+        rv$data$VarImp$matrixVarImp.RMSE <- rv$data$VarImp$matrixVarImp.RMSE[order(rv$data$VarImp$matrixVarImp.RMSE[,length(rv$data$VarImp$matrixVarImp.RMSE)-3],decreasing=TRUE),,drop=FALSE]
+        
+        rv$data$VarImp$matrixVarImp.MSE <- merge(x=rv$data$VarImp$matrixVarImp.MSE, y=rv$data$header, by.x="Input_no", by.y="Input_no", all.x=T)
+        rv$data$VarImp$matrixVarImp.MSE <- rv$data$VarImp$matrixVarImp.MSE[order(rv$data$VarImp$matrixVarImp.MSE[,length(rv$data$VarImp$matrixVarImp.MSE)-3],decreasing=TRUE),,drop=FALSE]
+        
+      }
+      
+      
       output$textRMSE <- renderText({
         
         paste("Variable importance ranking according to RMSE")
@@ -499,36 +523,39 @@ rv$data <- NULL
         
       })
       
-      length(rv$data$VarImp$model)
-      
       rv$data
     
   })
   
   output$resultsRMSE <- renderDataTable({
+    
     ## The data has been stored in our rv, so can just return it here
+    #print("here4") #debugging
         return(rv$data$VarImp$matrixVarImp.RMSE)
     })
     
   output$resultsMSE <- renderDataTable({
+    
     ## The data has been stored in our rv, so can just return it here
+    #print("here5") #debugging
     return(rv$data$VarImp$matrixVarImp.MSE)
   })
   
   
-  
-  # fscaret function call for regression problems
+
+    
+# fscaret function call for regression problems
   myFS <- function(){
     
     trainDF <- read.csv(input$file_train$datapath,
-                        header = input$header,
-                        sep = input$sep,
-                        quote = input$quote)
+                        header = input$header_train,
+                        sep = input$sep_train,
+                        quote = input$quote_train)
     
     testDF <- read.csv(input$file_test$datapath,
-                       header = input$header,
-                       sep = input$sep,
-                       quote = input$quote)
+                       header = input$header_test,
+                       sep = input$sep_test,
+                       quote = input$quote_test)
     
     if(input$nocores1 < 0){
       
@@ -540,17 +567,18 @@ rv$data <- NULL
                    regPred=input$regPred,
                    Used.funcRegPred=c(input$regFuncSelect), with.labels=input$withlabels1,
                    supress.output=input$supressOutput1, no.cores=input$nocores1)
-    res_tab_MSE <- res$VarImp$matrixVarImp.MSE
-    res_tab_RMSE <- res$VarImp$matrixVarImp.RMSE
+    
+    header <- cbind(Input_no=c(1:ncol(trainDF)),Label=colnames(trainDF))
+    header <- header[1:(nrow(header)-1),]
+
+    res$header <- as.data.frame(header)
+    
+    print(res$header)
     
     return(res)
     
   }
-  
-    
-  
-  
-  
+
 }
 
 
