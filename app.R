@@ -15,6 +15,41 @@ library(DT)
 regChoices <- funcRegPred
 classChoices <- funcClassPred
 
+#' busyIndicator from https://github.com/AnalytixWare/ShinySky/blob/master/R/busy-indicator.r by  xiaodaigh
+#' 
+#' A busy indicator
+#' 
+#' @param text The text to show
+#' @param img An anitmated gif
+#' @param wait The amount of time to wait before showing the busy indicator. The
+#'   default is 1000 which is 1 second.
+#'   
+#' @export
+busyIndicator <- function(text = "Calculation in progress..",img = "ajax-loader.gif", wait=1000) {
+  tagList(
+    singleton(tags$head(
+      tags$link(rel="stylesheet", type="text/css",href="busyIndicator.css")
+    ))
+    ,div(class="shinysky-busy-indicator",p(text),img(src=img))
+    ,tags$script(sprintf(
+      "	setInterval(function(){
+      if ($('html').hasClass('shiny-busy')) {
+      setTimeout(function() {
+      if ($('html').hasClass('shiny-busy')) {
+      $('div.shinysky-busy-indicator').show()
+      }
+      }, %d)  		    
+      } else {
+      $('div.shinysky-busy-indicator').hide()
+      }
+},100)
+      ",wait)
+    )
+  )	
+  }
+
+
+
 
 
 # Define UI for application that draws a histogram
@@ -319,6 +354,7 @@ ui <- fluidPage(
             
               fluidRow(tags$h3(textOutput("textRMSE"))),  
               fluidRow(p("")),
+              busyIndicator(),
               column(width = 8, 
                       DT::dataTableOutput("resultsRMSE",
                                           width = "75%")),
@@ -463,6 +499,7 @@ rv$data <- NULL
         
       })
       
+      length(rv$data$VarImp$model)
       
       rv$data
     
@@ -498,8 +535,7 @@ rv$data <- NULL
       input$nocores1 <- NULL
       
     }
-    
-    
+
     res <- fscaret(trainDF, testDF, myTimeLimit = input$myTimeLimit1, preprocessData=input$preprocessData1,
                    regPred=input$regPred,
                    Used.funcRegPred=c(input$regFuncSelect), with.labels=input$withlabels1,
@@ -516,6 +552,8 @@ rv$data <- NULL
   
   
 }
+
+
 
 # Run the application 
 shinyApp(ui = ui, server = server)
