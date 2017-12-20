@@ -469,13 +469,13 @@ server <- function(input,output,session) {
   
   observeEvent(input$regPred, {
     if(input$classPred==TRUE){
-    updateCheckboxInput(session,"regPred",value=FALSE)
+      updateCheckboxInput(session,"regPred",value=FALSE)
     }
   })
   
   observeEvent(input$classPred, {
     if(input$regPred==TRUE){
-    updateCheckboxInput(session,"classPred",value=FALSE)
+      updateCheckboxInput(session,"classPred",value=FALSE)
     }
     
   })
@@ -491,16 +491,8 @@ rv$data <- NULL
     
       rv$data <- myFS()   ## store the data in the reactive value
       
-      #print("here1") #debugging
-      if(input$preprocessData1 == "TRUE"){
-      #  print("here2") #debugging  
-        rv$data$VarImp$matrixVarImp.RMSE <- merge(x=rv$data$VarImp$matrixVarImp.RMSE, y=rv$data$PPlabels, by.x="Input_no", by.y="Input_no", all.x=T)
-        rv$data$VarImp$matrixVarImp.RMSE <- rv$data$VarImp$matrixVarImp.RMSE[order(rv$data$VarImp$matrixVarImp.RMSE[,length(rv$data$VarImp$matrixVarImp.RMSE)-3],decreasing=TRUE),,drop=FALSE]
-        
-        rv$data$VarImp$matrixVarImp.MSE <- merge(x=rv$data$VarImp$matrixVarImp.MSE, y=rv$data$PPlabels, by.x="Input_no", by.y="Input_no", all.x=T)
-        rv$data$VarImp$matrixVarImp.MSE <- rv$data$VarImp$matrixVarImp.MSE[order(rv$data$VarImp$matrixVarImp.MSE[,length(rv$data$VarImp$matrixVarImp.MSE)-3],decreasing=TRUE),,drop=FALSE]
-        
-      } else if(input$preprocessData1 == "FALSE") {
+      print("here1") #debugging
+    
       #  print("here3") #debugging
         rv$data$VarImp$matrixVarImp.RMSE <- merge(x=rv$data$VarImp$matrixVarImp.RMSE, y=rv$data$header, by.x="Input_no", by.y="Input_no", all.x=T)
         rv$data$VarImp$matrixVarImp.RMSE <- rv$data$VarImp$matrixVarImp.RMSE[order(rv$data$VarImp$matrixVarImp.RMSE[,length(rv$data$VarImp$matrixVarImp.RMSE)-3],decreasing=TRUE),,drop=FALSE]
@@ -508,8 +500,7 @@ rv$data <- NULL
         rv$data$VarImp$matrixVarImp.MSE <- merge(x=rv$data$VarImp$matrixVarImp.MSE, y=rv$data$header, by.x="Input_no", by.y="Input_no", all.x=T)
         rv$data$VarImp$matrixVarImp.MSE <- rv$data$VarImp$matrixVarImp.MSE[order(rv$data$VarImp$matrixVarImp.MSE[,length(rv$data$VarImp$matrixVarImp.MSE)-3],decreasing=TRUE),,drop=FALSE]
         
-      }
-      
+    
       
       output$textRMSE <- renderText({
         
@@ -522,7 +513,7 @@ rv$data <- NULL
         paste("Variable importance ranking according to MSE")
         
       })
-      
+
       rv$data
     
   })
@@ -568,12 +559,24 @@ rv$data <- NULL
                    Used.funcRegPred=c(input$regFuncSelect), with.labels=input$withlabels1,
                    supress.output=input$supressOutput1, no.cores=input$nocores1)
     
-    header <- cbind(Input_no=c(1:ncol(trainDF)),Label=colnames(trainDF))
-    header <- header[1:(nrow(header)-1),]
+    if(input$preprocessData1=="FALSE"){
+      header <- cbind(Input_no=c(1:ncol(trainDF)),Label=colnames(trainDF))
+      header <- header[1:(nrow(header)-1),]
+  
+      res$header <- as.data.frame(header)
+      
+        } else if (input$preprocessData1=="TRUE"){
+            
+            header <- res$PPlabels
+            colnames(header)[1] <- c("Input_no")
+            res$header <- as.data.frame(header)
+            
+    }
 
-    res$header <- as.data.frame(header)
-    
+    do.call(file.remove, list(list.files(tempdir(), full.names = TRUE)))  
     print(res$header)
+    print(tempdir())
+
     
     return(res)
     
