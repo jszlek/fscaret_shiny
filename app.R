@@ -85,7 +85,8 @@ ui <- fluidPage(
               tabPanel("Home",fluid=TRUE,
                        titlePanel(h2("Introduction")),
                        mainPanel(
-                          p("This is an User Interface (ui) application which implements the automated feature selection
+                         busyIndicator(),
+                          p("This is a User Interface (ui) application which implements the automated feature selection
                                  provided by the 'fscaret' package of R-environment. Please visit the page ",
                             a("https://cran.r-project.org/package=fscaret",href="https://cran.r-project.org/package=fscaret",
                                                 " for more information on fscaret.",align="justified")),
@@ -197,6 +198,7 @@ ui <- fluidPage(
       
       # Show a plot of the generated distribution
       mainPanel(
+        busyIndicator(),
         # Output: Data file ----
         tableOutput("contents_train"),
         tableOutput("contents_test")
@@ -208,6 +210,7 @@ ui <- fluidPage(
              
              
                mainPanel(
+                 busyIndicator(),
                  fluidRow(
                    column(5,
                  
@@ -355,23 +358,36 @@ ui <- fluidPage(
 
              mainPanel(
               
-            
+              busyIndicator(),
               fluidRow(tags$h3(textOutput("textRMSE"))),  
               fluidRow(p("")),
-              busyIndicator(),
               column(width = 8, 
                       DT::dataTableOutput("resultsRMSE",
                                           width = "75%")),
+              downloadButton("downloadResultsRMSE", "Download Table 1"),
+              
               fluidRow(p("")),
+              fluidRow(tags$h3(textOutput("rawTextRMSE"))),
+              fluidRow(p("")),
+              column(width = 8, 
+                     DT::dataTableOutput("rawRMSE",
+                                         width = "75%")),
+              downloadButton("downloadRawRMSE", "Download Table 2"),
               fluidRow(p("")),
               fluidRow(tags$h3(textOutput("textMSE"))),
               fluidRow(p("")),
-              column(width = 8, 
+              column(width = 8,
                      DT::dataTableOutput("resultsMSE",
-                                         width = "75%"))
-              
+                                         width = "75%")),
+              downloadButton("downloadResultsMSE", "Download Table 3"),
+              fluidRow(p("")),
+              fluidRow(tags$h3(textOutput("rawTextMSE"))),
+              fluidRow(p("")),
+              column(width = 8,
+                     DT::dataTableOutput("rawMSE",
+                                         width = "75%")),
+              downloadButton("downloadRawMSE", "Download Table 4")
                
-              
              )
              
                         
@@ -379,29 +395,15 @@ ui <- fluidPage(
   
   tabPanel("About",fluid=TRUE,
            
-           sidebarLayout(
-             sidebarPanel(
-               
-             ),
              mainPanel(
-               
+               busyIndicator(),
+               pre(includeText("README.TXT"))
              )
-           )
            
-           
-           
-  ) 
-  
-  
-  
-  
-                          
-          )
-  
+    ) 
 
-  
-  
   )
+)
   
 
 
@@ -508,9 +510,21 @@ rv$data <- NULL
         
       })
       
+      output$rawTextRMSE <- renderText({
+        
+        paste("Raw RMSE values")
+        
+      })
+      
       output$textMSE <- renderText({
         
         paste("Variable importance ranking according to MSE")
+        
+      })
+      
+      output$rawTextMSE <- renderText({
+        
+        paste("Raw MSE values")
         
       })
 
@@ -518,21 +532,33 @@ rv$data <- NULL
     
   })
   
-  output$resultsRMSE <- renderDataTable({
+  output$resultsRMSE <- DT::renderDataTable({
     
     ## The data has been stored in our rv, so can just return it here
     #print("here4") #debugging
-        return(rv$data$VarImp$matrixVarImp.RMSE)
+        DT::datatable(rv$data$VarImp$matrixVarImp.RMSE)
     })
+  
+  output$rawRMSE <- DT::renderDataTable({
     
-  output$resultsMSE <- renderDataTable({
+    ## The data has been stored in our rv, so can just return it here
+    #print("here4") #debugging
+    DT::datatable(t(rv$data$VarImp$rawRMSE),colnames = c("rawRMSE"))
+  })
+    
+  output$resultsMSE <- DT::renderDataTable({
     
     ## The data has been stored in our rv, so can just return it here
     #print("here5") #debugging
-    return(rv$data$VarImp$matrixVarImp.MSE)
+    DT::datatable(rv$data$VarImp$matrixVarImp.MSE)
   })
   
-  
+  output$rawMSE <- DT::renderDataTable({
+    
+    ## The data has been stored in our rv, so can just return it here
+    #print("here5") #debugging
+    DT::datatable(t(rv$data$VarImp$rawMSE),colnames = c("rawMSE"))
+  })
 
     
 # fscaret function call for regression problems
@@ -581,7 +607,49 @@ rv$data <- NULL
     return(res)
     
   }
-
+  
+  
+  # Downloadable csv of selected dataset ----
+  output$downloadResultsRMSE <- downloadHandler(
+    filename = function() {
+      paste("resultsRMSE",".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(rv$data$VarImp$matrixVarImp.RMSE, file, row.names = TRUE, sep="\t")
+    }
+  )
+  
+  output$downloadResultsMSE <- downloadHandler(
+    filename = function() {
+      paste("resultsMSE",".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(rv$data$VarImp$matrixVarImp.MSE, file, row.names = TRUE, sep="\t")
+    }
+  )
+  
+  output$downloadRawRMSE <- downloadHandler(
+    filename = function() {
+      paste("resultsRawRMSE",".csv", sep = "")
+    },
+    content = function(file) {
+      my.data <- t(rv$data$VarImp$rawRMSE)
+      colnames(my.data) <- c("rawRMSE")
+      write.csv(my.data, file, row.names = TRUE, sep="\t")
+    }
+  )
+  
+  output$downloadRawMSE <- downloadHandler(
+    filename = function() {
+      paste("resultsRawMSE",".csv", sep = "")
+    },
+    content = function(file) {
+      my.data <- t(rv$data$VarImp$rawMSE)
+      colnames(my.data) <- c("rawMSE")
+      write.csv(my.data, file, row.names = TRUE, sep="\t")
+    }
+  )
+  
 }
 
 
